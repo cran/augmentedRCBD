@@ -1,6 +1,6 @@
 ### This file is part of 'augmentedRCBD' package for R.
 
-### Copyright (C) 2015, ICAR-NBPGR.
+### Copyright (C) 2015-2020, ICAR-NBPGR.
 #
 # augmentedRCBD is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -50,11 +50,13 @@
 #'@param alpha Type I error probability (Significance level) to be used for
 #'  multiple comparisons.
 #'@param group If \code{TRUE}, genotypes will be grouped according to
-#'  \code{"method.comp"}.
+#'  \code{"method.comp"}. Default is \code{TRUE}.
 #'@param console If \code{TRUE}, output will be printed to console. Default is
-#'  \code{TRUE}.
+#'  \code{TRUE}. Default is \code{TRUE}.
 #'@param simplify If \code{TRUE}, ANOVA output will be given as a data frame
-#'  instead of a \code{summary.aov} object
+#'  instead of a \code{summary.aov} object. Default is \code{TRUE}.
+#'@param truncate.means If \code{TRUE}, the negative adjusted means will be
+#'  truncated to zero. Default is \code{TRUE}.
 #'
 #'@return A list of class \code{augmentedRCBD} containing the following
 #'  components:  \item{\code{Details}}{Details of the augmented design used.}
@@ -104,11 +106,13 @@
 #'
 #'\insertRef{federer_augmented_1956}{augmentedRCBD}
 #'
+#'\insertRef{federer_augmented_1956-1}{augmentedRCBD}
+#'
 #'\insertRef{federer_augmented_1961}{augmentedRCBD}
 #'
 #'\insertRef{mathur_data_2008}{augmentedRCBD}
 #'
-#'\insertRef{de_mendiburu_agricolae:_2015}{augmentedRCBD}
+#'\insertRef{de_mendiburu_agricolae_2015}{augmentedRCBD}
 #'
 #' @examples
 #' # Example data
@@ -160,7 +164,7 @@
 augmentedRCBD <- function(block, treatment, y, checks = NULL,
                           method.comp = c("lsd", "tukey", "none"),
                           alpha=0.05, group=TRUE, console = TRUE,
-                          simplify = FALSE) {
+                          simplify = FALSE, truncate.means = TRUE) {
   # Checks
   # block
   if (!is.factor(block)) {
@@ -404,6 +408,7 @@ augmentedRCBD <- function(block, treatment, y, checks = NULL,
                                     ifelse(Comparison$p.value < 0.05, "*", "")))
     colnames(Groups) <- c("Treatment", "Adjusted Means", "SE", "df",
                           "lower.CL", "upper.CL", "Group")
+
   }
 
   # Compute SE and CD for various comparisons
@@ -423,7 +428,7 @@ augmentedRCBD <- function(block, treatment, y, checks = NULL,
   SE.check <- sqrt(2 * MSE / r) #Two Control Treatments
   SE.test1 <- sqrt(2 * MSE) #Two Augmented Treatments (Same Block)
   SE.test2 <- sqrt(2 * MSE * (1 + (1 / c))) #Two Augmented Treatments(Different Blocks)
-  SE.testcheck <- sqrt(MSE * (1 + (1 / r) + (1 / c) - (1 / (r * c)))) #A Test Treatment and a Control Treatment
+  SE.testcheck <- sqrt(MSE * (1 + (1 / r) + (1 / c) + (1 / (r * c)))) #A Test Treatment and a Control Treatment
 
   SECD <- data.frame(`Std. Error of Diff.` =  c(SE.check, SE.test1,
                                                 SE.test2, SE.testcheck),
@@ -433,16 +438,37 @@ augmentedRCBD <- function(block, treatment, y, checks = NULL,
                       paste("CD (", alpha * 100, "%)", sep = ""))
 
   if (method.comp == "tukey") {
-    q0 <- qtukey(1 - (alpha / 2), nlevels(treatment),
+    q0 <- qtukey(p = 1 - alpha, nmeans = nlevels(treatment),
                  df = augmented3.aov$df.residual)
 
-    SECD$THSD <- q0 * SECD$`Std. Error of Diff.`
+    SECD$THSD <- c((q0 * SECD[1:3,]$`Std. Error of Diff.`)/sqrt(2), 0)
+    hm <- 4/(1 + (1 / r) + (1 / c) + (1 / (r * c)))
+    SECD[4,]$THSD <- q0 * sqrt(MSE/hm)
     colnames(SECD) <- c("Std. Error of Diff.",
                         paste("CD (", alpha * 100, "%)", sep = ""),
                         paste("Tukey HSD (", alpha * 100, "%)", sep = ""))
   }
 
   rm(augmented.aov, augmented2.aov, augmented3.aov, augmented3.anova)
+
+  # Truncate negative adjusted means
+  if (any(Means$`Adjusted Means` < 0)){
+    negadjmeans <- which(Means$`Adjusted Means` < 0)
+    negadjmeanst <- as.character(Means$Treatment[negadjmeans])
+
+    negmsg <- paste('Negative adjusted means for the following treatment(s)',
+                    '\n', paste(negadjmeanst, collapse = ", "))
+
+  if (truncate.means == TRUE) {
+    Means$`Adjusted Means`[Means$`Adjusted Means` < 0] <- 0
+    Groups$`Adjusted Means`[Groups$`Adjusted Means` < 0] <- 0
+
+    warning(paste(negmsg, '\n',
+                  'They were truncated to zero'))
+  } else {
+    warning(negmsg)
+  }
+  }
 
   output <- list(Details = Details, Means = Means,
                  `ANOVA, Treatment Adjusted` = A1,

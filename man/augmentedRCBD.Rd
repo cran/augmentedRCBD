@@ -4,9 +4,18 @@
 \alias{augmentedRCBD}
 \title{Analysis of Augmented Randomised Complete Block Design}
 \usage{
-augmentedRCBD(block, treatment, y, checks = NULL,
-  method.comp = c("lsd", "tukey", "none"), alpha = 0.05,
-  group = TRUE, console = TRUE, simplify = FALSE)
+augmentedRCBD(
+  block,
+  treatment,
+  y,
+  checks = NULL,
+  method.comp = c("lsd", "tukey", "none"),
+  alpha = 0.05,
+  group = TRUE,
+  console = TRUE,
+  simplify = FALSE,
+  truncate.means = TRUE
+)
 }
 \arguments{
 \item{block}{Vector of blocks (as a factor).}
@@ -30,13 +39,16 @@ directly from treatment and block effects instead of using
 multiple comparisons.}
 
 \item{group}{If \code{TRUE}, genotypes will be grouped according to
-\code{"method.comp"}.}
+\code{"method.comp"}. Default is \code{TRUE}.}
 
 \item{console}{If \code{TRUE}, output will be printed to console. Default is
-\code{TRUE}.}
+\code{TRUE}. Default is \code{TRUE}.}
 
 \item{simplify}{If \code{TRUE}, ANOVA output will be given as a data frame
-instead of a \code{summary.aov} object}
+instead of a \code{summary.aov} object. Default is \code{TRUE}.}
+
+\item{truncate.means}{If \code{TRUE}, the negative adjusted means will be
+truncated to zero. Default is \code{TRUE}.}
 }
 \value{
 A list of class \code{augmentedRCBD} containing the following
@@ -131,11 +143,13 @@ out1 <- augmentedRCBD(data$blk, data$trt, data$y1, method.comp = "lsd",
 \references{
 \insertRef{federer_augmented_1956}{augmentedRCBD}
 
+\insertRef{federer_augmented_1956-1}{augmentedRCBD}
+
 \insertRef{federer_augmented_1961}{augmentedRCBD}
 
 \insertRef{mathur_data_2008}{augmentedRCBD}
 
-\insertRef{de_mendiburu_agricolae:_2015}{augmentedRCBD}
+\insertRef{de_mendiburu_agricolae_2015}{augmentedRCBD}
 }
 \seealso{
 \code{\link[agricolae]{DAU.test}},

@@ -1,6 +1,6 @@
 ### This file is part of 'augmentedRCBD' package for R.
 
-### Copyright (C) 2015, ICAR-NBPGR.
+### Copyright (C) 2015-2020, ICAR-NBPGR.
 #
 # augmentedRCBD is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -128,6 +128,7 @@ report.augmentedRCBD <- function(aug, target){
                             value = "Standard Errors and Critical Differences",
                             style = "heading 1")
   se <- aug$`Std. Errors`
+  se <- cbind(Comparison = row.names(se), se)
   se <- dplyr::mutate_if(se, is.numeric, round.conditional)
   se <- autofit(regulartable(se))
   se <- bold(se, part = "header")

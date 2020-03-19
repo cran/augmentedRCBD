@@ -1,6 +1,6 @@
 ### This file is part of 'augmentedRCBD' package for R.
 
-### Copyright (C) 2015, ICAR-NBPGR.
+### Copyright (C) 2015-2020, ICAR-NBPGR.
 #
 # augmentedRCBD is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -186,17 +186,26 @@ binw <- function(x, method = c("fd", "scott", "sturges")) {
   return(bw)
 }
 
-unit.list <- getFromNamespace("unit.list", "grid")
+if (getRversion() >= "4.0.0")  {
+  resize_heights <- function(g, heights = rep(1, length(idpanels))){
+    idpanels <- unique(g$layout[grepl("panel",g$layout$name), "t"])
+    g$heights <- grid::unit(g$heights, "null")
+    g$heights[idpanels] <- grid::unit(do.call(grid::unit,
+                                              list(heights, 'null')), "null")
+    g
+  }
+} else {
+  unit.list <- getFromNamespace("unit.list", "grid")
 
-resize_heights <- function(g, heights = rep(1, length(idpanels))){
-  idpanels <- unique(g$layout[grepl("panel", g$layout$name), "t"])
-  g$heights <- unit.list(g$heights)
-  hunits <- lapply(heights, unit, "null")
-  class(hunits) <- class(g$heights[idpanels])
-  g$heights[idpanels] <- hunits
-  g
+  resize_heights <- function(g, heights = rep(1, length(idpanels))){
+    idpanels <- unique(g$layout[grepl("panel", g$layout$name), "t"])
+    g$heights <- unit.list(g$heights)
+    hunits <- lapply(heights, unit, "null")
+    class(hunits) <- class(g$heights[idpanels])
+    g$heights[idpanels] <- hunits
+    g
+  }
 }
-
 
 iscolour <- function(x) {
   sapply(x, function(X) {
