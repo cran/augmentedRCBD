@@ -97,7 +97,8 @@
 #'
 #'@seealso \code{\link[agricolae]{DAU.test}},
 #'  \href{https://www.rdocumentation.org/packages/easyanova/versions/5.0/topics/ea1}{\code{ea1}},
-#'   \code{\link[emmeans]{emmeans}}, \code{\link[emmeans]{cld.emmGrid}},
+#'   \code{\link[emmeans]{emmeans}},
+#'  \code{\link[emmeans:CLD.emmGrid]{cld.emmGrid}},
 #'  \href{https://rdrr.io/rforge/plantbreeding/man/aug.rcb.html}{\code{aug.rcb}}
 #'
 #'@references
@@ -304,6 +305,7 @@ augmentedRCBD <- function(block, treatment, y, checks = NULL,
   Means <- Means[c("Treatment", "Block", "Means", "SE", "r", "Min", "Max")]
 
   # ANOVA 1 - `ANOVA, Treatment Adjusted`
+  # Get helmert contrasts for Type III SS
   options(contrasts = c("contr.helmert", "contr.poly"))
   augmented.aov <- aov(y ~ block + treatment)
 
@@ -331,6 +333,7 @@ augmentedRCBD <- function(block, treatment, y, checks = NULL,
   names(effects.block) <- levels(block)
 
   # ANOVA 2 - `ANOVA, Block Adjusted`
+  # Get contrast matrix for differentiating between check and test treatments
   contr.augmented <- function(n1, n2){
     m1 <- contr.helmert(n1)
     m2 <- contr.helmert(n2)
