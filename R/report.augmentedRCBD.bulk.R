@@ -141,7 +141,7 @@ report.augmentedRCBD.bulk <- function(aug.bulk, target){
   CD <- aug.bulk$CD
   colnames(CD) <- make.names(colnames(CD), unique = TRUE)
   CD <- autofit(flextable(CD))
-  CD <- bold(SE, part = "header")
+  CD <- bold(CD, part = "header")
   augreport <- body_add_flextable(augreport, CD)
 
   # CV
@@ -307,5 +307,6 @@ report.augmentedRCBD.bulk <- function(aug.bulk, target){
                             style = "Center text")
 
 print(augreport, target = target)
+message(paste("File created at", target))
 
 }
