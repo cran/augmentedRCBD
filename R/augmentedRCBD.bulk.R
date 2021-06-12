@@ -1,6 +1,6 @@
 ### This file is part of 'augmentedRCBD' package for R.
 
-### Copyright (C) 2015-2020, ICAR-NBPGR.
+### Copyright (C) 2015-2021, ICAR-NBPGR.
 #
 # augmentedRCBD is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -153,7 +153,7 @@ augmentedRCBD.bulk <- function(data, block, treatment, traits, checks = NULL,
   }
   # check if trait columns present in data
   if (FALSE %in% (traits %in% colnames(data))) {
-    stop(paste('The following column(s) specified as trait columns not present in "data":\n',
+    stop(paste('The following column(s) specified as trait columns are not present in "data":\n',
                paste(traits[!(traits %in% colnames(data))], collapse = ", "),
                sep = ""))
   }
