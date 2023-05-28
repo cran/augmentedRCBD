@@ -1,6 +1,6 @@
 ### This file is part of 'augmentedRCBD' package for R.
 
-### Copyright (C) 2015-2021, ICAR-NBPGR.
+### Copyright (C) 2015-2023, ICAR-NBPGR.
 #
 # augmentedRCBD is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -302,7 +302,7 @@
 gva.augmentedRCBD <- function(aug, k = 2.063) {
 
   if (!is(aug, "augmentedRCBD")) {
-    stop('"aug" is not of class "augmentedRCBD"')
+    stop('"aug" is not of class "augmentedRCBD".')
   }
 
   if (is.data.frame(aug$`ANOVA, Block Adjusted`)){
@@ -312,7 +312,8 @@ gva.augmentedRCBD <- function(aug, k = 2.063) {
   }
 
   if (pval > 0.05) {
-    warning('P-value for "Treatment: Test" is > 0.05. Genetic variability analysis may not be appropriate for this trait.')
+    warning('P-value for "Treatment: Test" is > 0.05. ',
+            'Genetic variability analysis may not be appropriate for this trait.')
   }
 
   if (is.data.frame(aug$`ANOVA, Block Adjusted`)){

@@ -1,6 +1,6 @@
 ### This file is part of 'augmentedRCBD' package for R.
 
-### Copyright (C) 2015-2021, ICAR-NBPGR.
+### Copyright (C) 2015-2023, ICAR-NBPGR.
 #
 # augmentedRCBD is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -78,7 +78,7 @@
 describe.augmentedRCBD <- function(aug) { # all treatments (test + checks)
 
   if (!is(aug, "augmentedRCBD")) {
-    stop('"aug" is not of class "augmentedRCBD"')
+    stop('"aug" is not of class "augmentedRCBD".')
   }
 
   adjmeans <- aug$Means$`Adjusted Means`

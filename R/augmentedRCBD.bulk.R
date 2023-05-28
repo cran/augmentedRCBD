@@ -1,6 +1,6 @@
 ### This file is part of 'augmentedRCBD' package for R.
 
-### Copyright (C) 2015-2021, ICAR-NBPGR.
+### Copyright (C) 2015-2023, ICAR-NBPGR.
 #
 # augmentedRCBD is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -51,16 +51,22 @@
 #' @param check.col The colour(s) to be used to highlight check values in the
 #'   plot as a character vector. Must be valid colour values in R (named
 #'   colours, hexadecimal representation, index of colours [\code{1:8}] in
-#'   default R `palette()` etc.).
+#'   default R \code{palette()} etc.).
 #' @param console If \code{TRUE}, output will be printed to console. Default is
 #'   \code{TRUE}.
+#' @param k The standardized selection differential or selection intensity
+#'   required for computation of Genetic advance. Default is 2.063 for 5\%
+#'   selection proportion (see \strong{Details} in
+#'  \code{\link[augmentedRCBD]{gva.augmentedRCBD}}). Ignored if
+#'  \code{gva = FALSE}.
 #'
 #' @return A list of class \code{augmentedRCBD.bulk} containing the following
 #'   components:  \item{\code{Details}}{Details of the augmented design used and
 #'   the traits/characters.} \item{\code{ANOVA, Treatment Adjusted}}{A data
-#'   frame of mean sum of squares of the specified traits from treatment
-#'   adjusted ANOVA.} \item{\code{ANOVA, Block Adjusted}}{A data frame of mean
-#'   sum of squares of the specified traits from block adjusted ANOVA}
+#'   frame of mean sum of squares, p value and stastical significance of the
+#'   specified traits from treatment adjusted ANOVA.} \item{\code{ANOVA, Block
+#'   Adjusted}}{A data frame of mean sum of squares, p value and stastical
+#'   significance of the specified traits from block adjusted ANOVA}
 #'   \item{\code{Means}}{A data frame of the adjusted means of the treatments
 #'   for the specified traits.} \item{\code{Check statistics}}{A list of data
 #'   frames with check statistics such as number of replications, standard
@@ -75,12 +81,15 @@
 #'   \item{\code{Descriptive statistics}}{A data frame of descriptive statistics
 #'   for the specified traits.} \item{\code{Frequency distribution}}{A list of
 #'   ggplot2 plot grobs of the frequency distribution plots.}
+#'   \item{\code{k}}{The standardized selection differential or selection
+#'   intensity used for computaton of Genetic advance.}
 #'   \item{\code{Genetic variability analysis}}{A data frame of genetic
 #'   variability statistics for the specified traits.} \item{\code{GVA plots}}{A
 #'   list of three ggplot2 objects with the plots for (a) Phenotypic and
 #'   Genotypic CV, (b) Broad sense heritability and (c) Genetic advance over
 #'   mean} \item{\code{warnings}}{A list of warning messages (if any) captured
-#'   during model fitting and frequency distribution plotting.}
+#'   during model fitting, frequency distribution plotting and genetic
+#'   variability analysis.}
 #'
 #' @examples
 #' # Example data
@@ -113,6 +122,7 @@
 #'   \code{\link[augmentedRCBD]{gva.augmentedRCBD}}
 #'
 #' @import ggplot2
+#' @importFrom numform f_num
 #' @importFrom reshape2 dcast
 #' @importFrom reshape2 melt
 #' @importFrom dplyr arrange
@@ -123,32 +133,33 @@
 #' @importFrom grDevices nclass.scott
 #' @importFrom grDevices nclass.Sturges
 #' @importFrom stats na.omit
+#' @importFrom cli ansi_strip
 #' @export
 augmentedRCBD.bulk <- function(data, block, treatment, traits, checks = NULL,
                                alpha = 0.05, describe = TRUE,
-                               freqdist = TRUE, gva = TRUE,
+                               freqdist = TRUE, gva = TRUE, k = 2.063,
                                check.col = "red", console = TRUE) {
 
   # Check if data.frame
   if (!is.data.frame(data)) {
-    stop('"data" should be a data frame object')
+    stop('"data" should be a data frame object.')
   }
 
   if (any(c("tbl_dataf", "tbl") %in% class(data))) {
-    warning('"data" is of type tibble\nCoercing to data frame')
+    warning('"data" is of type tibble.\nCoercing to data frame.')
     data <- as.data.frame(data)
   }
 
   # check if block column present in data
   if (!(block %in% colnames(data))) {
     stop(paste('Column ', block,
-               ' specified as the block column is not present in "data"',
+               ' specified as the block column is not present in "data".',
                sep = ""))
   }
   # check if treatment column present in data
   if (!(treatment %in% colnames(data))) {
     stop(paste('Column ', treatment,
-               ' specified as the treatment column is not present in "data"',
+               ' specified as the treatment column is not present in "data".',
                sep = ""))
   }
   # check if trait columns present in data
@@ -172,12 +183,12 @@ augmentedRCBD.bulk <- function(data, block, treatment, traits, checks = NULL,
   }
   # alpha
   if (!(0 < alpha && alpha < 1)) {
-    stop('"alpha" should be between 0 and 1 (0 < alpha < 1)')
+    stop('"alpha" should be between 0 and 1 (0 < alpha < 1).')
   }
 
   # check.col
   if (!all(iscolour(check.col))) {
-    stop('"check.col" specifies invalid colour(s)')
+    stop('"check.col" specifies invalid colour(s).')
   }
 
   # convert to factor
@@ -204,12 +215,12 @@ augmentedRCBD.bulk <- function(data, block, treatment, traits, checks = NULL,
     if (!(all(treatmentorder[treatmentorder$treatment %in% checks, ]$Freq == nblocks))) {
       print(treatmentorder)
       stop(paste('"checks" are not replicated across all the blocks (',
-                 nblocks, ')', sep = ""))
+                 nblocks, ').', sep = ""))
     }
 
     tests <- levels(data[, treatment])[!(levels(data[, treatment]) %in% checks)]
     if (!all(table(droplevels(data[, treatment][data[, treatment] %in% tests])) == 1)) {
-      warning("Test treatments are replicated")
+      warning("Test treatments are replicated.")
     }
 
   } else {# i.e. "checks" is not specified
@@ -232,7 +243,7 @@ augmentedRCBD.bulk <- function(data, block, treatment, traits, checks = NULL,
       print(treatmentorder)
       stop(paste("Checks cannot be inferred as none of the treatments are",
                  "replicated across all the blocks (",
-                 nblocks, ")", sep = ""))
+                 nblocks, ").", sep = ""))
     }
 
     checks <- as.character(treatmentorder[treatmentorder$Freq == nblocks, ]$treatment)
@@ -240,20 +251,21 @@ augmentedRCBD.bulk <- function(data, block, treatment, traits, checks = NULL,
 
     tests <- levels(data[, treatment])[!(levels(data[, treatment]) %in% checks)]
     if (!all(table(droplevels(data[, treatment][data[, treatment] %in% tests])) == 1)) {
-      warning("Test treatments are replicated")
+      warning("Test treatments are replicated.")
     }
   }
 
   if (length(check.col) != 1) {
    if (length(check.col) != length(checks)) {
-     stop('"checks" and "check.col" are of unequal lengths')
+     stop('"checks" and "check.col" are of unequal lengths.')
    }
  }
 
   output <- vector("list", length(traits))
   names(output) <- traits
 
-  warn <- NULL
+  warn <- vector("list", length(traits))
+  names(warn) <- traits
   for (i in seq_along(traits)) {
 
     withCallingHandlers({
@@ -264,8 +276,7 @@ augmentedRCBD.bulk <- function(data, block, treatment, traits, checks = NULL,
                                    group = FALSE, console = FALSE,
                                    simplify = TRUE)
     }, warning = function(w) {
-      warn <<- append(warn, traits[i])
-      warn <<- append(warn, conditionMessage(w))
+      warn[[i]] <<- append(warn[[i]], cli::ansi_strip(conditionMessage(w)))
       invokeRestart("muffleWarning")
     })
 
@@ -314,20 +325,39 @@ augmentedRCBD.bulk <- function(data, block, treatment, traits, checks = NULL,
   anovata$sig[is.na(anovata$sig)] <- ""
   anovaba$sig[is.na(anovaba$sig)] <- ""
 
-  # Round off the MSS values according to value
-  anovata$MSS <- round.conditional(anovata$Mean.Sq)
-  anovaba$MSS <- round.conditional(anovaba$Mean.Sq)
+  anovataout <- merge.data.frame(dcast(anovata, Source + Df ~ Trait,
+                                       value.var = "Mean.Sq"),
+                                 dcast(anovata, Source + Df ~ Trait,
+                                       value.var = "sig"),
+                                 by = c("Source", "Df"),
+                                 suffixes = c("_Mean.Sq", "_sig"))
+  anovata_p <- dcast(anovata, Source + Df ~ Trait,
+                     value.var = "Pr..F.")
+  colnames(anovata_p) <- c("Source", "Df", paste(traits, "_Pr(>F)", sep = ""))
+  anovataout <- merge.data.frame(anovataout, anovata_p,
+                                 by = c("Source", "Df"))
+  rm(anovata, anovata_p)
 
-  anovata$MSS <- paste(anovata$MSS, stringi::stri_pad_right(anovata$sig, 3),
-                       sep = " ")
-  anovaba$MSS <- paste(anovaba$MSS, stringi::stri_pad_right(anovaba$sig, 3),
-                       sep = " ")
+  anovabaout <- merge.data.frame(dcast(anovaba, Source + Df ~ Trait,
+                                       value.var = "Mean.Sq"),
+                                 dcast(anovaba, Source + Df ~ Trait,
+                                       value.var = "sig"),
+                                 by = c("Source", "Df"),
+                                 suffixes = c("_Mean.Sq", "_sig"))
 
-  anovataout <- dcast(anovata, Source + Df ~ Trait, value.var = "MSS")
-  rm(anovata)
+  anovaba_p <- dcast(anovaba, Source + Df ~ Trait,
+                     value.var = "Pr..F.")
+  colnames(anovaba_p) <- c("Source", "Df", paste(traits, "_Pr(>F)", sep = ""))
+  anovabaout <- merge.data.frame(anovabaout, anovaba_p,
+                                 by = c("Source", "Df"))
+  rm(anovaba, anovaba_p)
 
-  anovabaout <- dcast(anovaba, Source + Df ~ Trait, value.var = "MSS")
-  rm(anovaba)
+  trtcols <- paste(rep(Details$Traits, each = 3),
+                   rep(c("_Mean.Sq", "_Pr(>F)", "_sig"),
+                       Details$`Number of Traits`), sep = "")
+
+  anovataout <- anovataout[, c("Source", "Df", trtcols)]
+  anovabaout <- anovabaout[, c("Source", "Df", trtcols)]
 
   anovataout$sl <- c(1, 5, 2, 3, 4)
   anovataout <- dplyr::arrange(anovataout, sl)
@@ -344,11 +374,9 @@ augmentedRCBD.bulk <- function(data, block, treatment, traits, checks = NULL,
   adjmeans <- lapply(adjmeans, function(x) dplyr::mutate_if(x, is.factor,
                                                             as.character))
   adjmeans <- dplyr::bind_rows(adjmeans)
-  adjmeans <- reshape2::dcast(adjmeans, Treatment ~ Trait,
+  adjmeans <- reshape2::dcast(adjmeans, Treatment + Block ~ Trait,
                               value.var = "Adjusted Means",
                               fun.aggregate = mean)
-  adjmeans[, traits] <- lapply(adjmeans[, traits], round.conditional)
-
   # Check statistics
   checkstat <- lapply(output,
                       function(x) x$Means[x$Means$Treatment %in% checks,
@@ -362,7 +390,6 @@ augmentedRCBD.bulk <- function(data, block, treatment, traits, checks = NULL,
   cvout <- lapply(cvout, function(x) dplyr::mutate_if(x, is.factor,
                                                       as.character))
   cvout <- dplyr::bind_rows(cvout)
-  cvout$CV <- round.conditional(cvout$CV)
 
   # overall adj mean
   oadjmean <- lapply(output, function(x) x$`Overall adjusted mean`)
@@ -372,7 +399,6 @@ augmentedRCBD.bulk <- function(data, block, treatment, traits, checks = NULL,
   oadjmean <- lapply(oadjmean, function(x) dplyr::mutate_if(x, is.factor,
                                                             as.character))
   oadjmean <- dplyr::bind_rows(oadjmean)
-  oadjmean$Overall.adjusted.mean <- round.conditional(oadjmean$Overall.adjusted.mean)
 
   # SE and CD
   secd <- lapply(output, function(x) x$`Std. Errors`)
@@ -380,13 +406,12 @@ augmentedRCBD.bulk <- function(data, block, treatment, traits, checks = NULL,
   secd <- lapply(secd, function(x) cbind(Comparison = rownames(x), x))
   secd <- lapply(secd, function(x) dplyr::mutate_if(x, is.factor, as.character))
   secd <- dplyr::bind_rows(secd)
-  secd$`Std. Error of Diff.` <- round.conditional(secd$`Std. Error of Diff.`)
-  secd[, grepl("CD \\(", colnames(secd))] <- round.conditional(secd[, grepl("CD \\(", colnames(secd))])
 
   seout <- reshape2::dcast(secd, Comparison ~ Trait,
                            value.var = "Std. Error of Diff.")
   cdout <- reshape2::dcast(secd, Comparison ~ Trait,
-                           value.var = colnames(secd)[grepl("CD \\(", colnames(secd))])
+                           value.var = colnames(secd)[grepl("CD \\(",
+                                                            colnames(secd))])
 
   # Descriptive statistics
   descout <- NULL
@@ -405,30 +430,24 @@ augmentedRCBD.bulk <- function(data, block, treatment, traits, checks = NULL,
                                                             as.character))
     descout <- dplyr::bind_rows(descout)
 
-    descout$Skewness.p.value. <- ifelse(descout$Skewness.p.value. <= 0.01, "**",
+    descout$Skewness_sig <- ifelse(descout$Skewness.p.value. <= 0.01, "**",
                                         ifelse(descout$Skewness.p.value. <= 0.05,
                                                "*", "ns"))
-    descout$Kurtosis.p.value. <- ifelse(descout$Kurtosis.p.value. <= 0.01, "**",
+    descout$Kurtosis_sig <- ifelse(descout$Kurtosis.p.value. <= 0.01, "**",
                                         ifelse(descout$Kurtosis.p.value. <= 0.05,
                                                "*", "ns"))
-    desc <- c("Mean", "Std.Error", "Std.Deviation", "Min",
-              "Max", "Skewness.statistic.", "Kurtosis.statistic.")
-    descout[, desc] <- apply(descout[, desc], MARGIN = 2,
-                             FUN = round.conditional)
 
     colnames(descout) <- c("Trait", "Count", "Mean", "Std.Error",
                            "Std.Deviation", "Min", "Max", "Skewness",
-                           "Skewness_sig", "Kurtosis", "Kurtosis_sig")
-    descout$Skewness <- paste(descout$Skewness,
-                              stringi::stri_pad_right(descout$Skewness_sig, 3),
-                              sep = " ")
-    descout$Kurtosis <- paste(descout$Kurtosis,
-                              stringi::stri_pad_right(descout$Kurtosis_sig, 3),
-                              sep = " ")
+                           "Skewness_Pr(>F)", "Kurtosis", "Kurtosis_Pr(>F)",
+                           "Skewness_sig", "Kurtosis_sig")
     descout <- descout[, c("Trait", "Count", "Mean", "Std.Error",
                            "Std.Deviation", "Min", "Max", "Skewness",
-                           "Kurtosis")]
+                           "Skewness_Pr(>F)", "Skewness_sig", "Kurtosis",
+                           "Kurtosis_Pr(>F)", "Kurtosis_sig")]
   }
+
+  rownames(descout) <- NULL
 
   # GVA
   gvaout <- NULL
@@ -441,18 +460,16 @@ augmentedRCBD.bulk <- function(data, block, treatment, traits, checks = NULL,
     gvaout <- vector("list", length(traits))
     names(gvaout) <- traits
 
-    # gvawarn <- data.frame(Trait = traits, Message = NA_character_,
-    #                      stringsAsFactors = FALSE)
-
-    gvawarn <- NULL
+    gvawarn <- vector("list", length(traits))
+    names(gvawarn) <- traits
     for (i in seq_along(traits)) {
 
       withCallingHandlers({
-        gvaout[[i]] <- gva.augmentedRCBD(output[[traits[i]]])
+        gvaout[[i]] <- gva.augmentedRCBD(output[[traits[i]]], k = k)
 
       }, warning = function(w) {
-        gvawarn <<- append(gvawarn, traits[i])
-        gvawarn <<- append(gvawarn, conditionMessage(w))
+        gvawarn[[i]] <<- append(gvawarn[[i]],
+                                cli::ansi_strip(conditionMessage(w)))
         invokeRestart("muffleWarning")
       })
     }
@@ -465,9 +482,6 @@ augmentedRCBD.bulk <- function(data, block, treatment, traits, checks = NULL,
     gvaout <- dplyr::bind_rows(gvaout)
 
     gvaplot <- gvaout
-
-    gvap <- c("Mean", "PV", "GV", "EV", "GCV", "PCV",  "ECV", "hBS", "GA", "GAM")
-    gvaout[, gvap] <- apply(gvaout[, gvap], MARGIN = 2, FUN = round.conditional)
 
     # GVA plot
     themecustom <- theme(axis.text.x = element_text(color = "black", angle = 45,
@@ -580,10 +594,8 @@ augmentedRCBD.bulk <- function(data, block, treatment, traits, checks = NULL,
     fqout <- vector("list", length(traits))
     names(fqout) <- traits
 
-    # fqwarn <- data.frame(Trait = traits, Message = NA_character_,
-    #                      stringsAsFactors = FALSE)
-
-    fqwarn <- NULL
+    fqwarn <- vector("list", length(traits))
+    names(fqwarn) <- traits
     for (i in seq_along(traits)) {
 
       withCallingHandlers({
@@ -591,13 +603,20 @@ augmentedRCBD.bulk <- function(data, block, treatment, traits, checks = NULL,
                                              xlab = traits[i],
                                              check.col = check.col)
       }, warning = function(w) {
-        fqwarn <<- append(fqwarn, traits[i])
-        fqwarn <<- append(fqwarn, conditionMessage(w))
+        fqwarn[[i]] <<- append(fqwarn[[i]],
+                               cli::ansi_strip(conditionMessage(w)))
         invokeRestart("muffleWarning")
       })
     }
   }
 
+  k <- ifelse(gva, k, NULL)
+
+  wrnlist <- list(Model = warn[which(!sapply(warn , is.null))],
+                  `Freq. dist` = fqwarn[which(!sapply(fqwarn , is.null))],
+                  GVA = gvawarn[which(!sapply(gvawarn , is.null))])
+
+  wrnlist[which(sapply(wrnlist, function(x) length(x) == 0))] <- list(NULL)
 
   out <- list(Details = Details, `ANOVA, Treatment Adjusted` = anovataout,
               `ANOVA, Block Adjusted` = anovabaout, Means = adjmeans,
@@ -605,11 +624,9 @@ augmentedRCBD.bulk <- function(data, block, treatment, traits, checks = NULL,
               alpha = alpha, `Std. Errors` = seout, CD = cdout,
               `Overall adjusted mean` = oadjmean,
               `CV` = cvout, `Descriptive statistics` = descout,
-              `Frequency distribution` = fqout,
+              `Frequency distribution` = fqout, k = k,
               `Genetic variability analysis` = gvaout,
-              `GVA plots` = gvaplots,
-              warnings = list(Model = warn, `Freq. dist` = fqwarn,
-                              GVA = gvawarn))
+              `GVA plots` = gvaplots, warnings = wrnlist)
 
   # Set Class
   class(out) <- "augmentedRCBD.bulk"
@@ -626,8 +643,12 @@ round.conditional <- function(x, digits = 2){
   x <- ifelse(round(x, digits) != 0,
          as.character(round(x, digits)),
          as.character(signif(x, digits)))
-  return(x)
 
+  x <- numform::f_num(x, pad.char = "",
+                      digits = digits,
+                      retain.leading.zero = TRUE)
+
+  return(x)
 }
 
 iscolour <- function(x) {
