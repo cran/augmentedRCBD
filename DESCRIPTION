@@ -1,6 +1,6 @@
 Package: augmentedRCBD
 Title: Analysis of Augmented Randomised Complete Block Designs
-Version: 0.1.6
+Version: 0.1.7
 Authors@R: c(
     person(given = "J.", family = "Aravind",
            email = "j.aravind@icar.gov.in",
@@ -8,14 +8,16 @@ Authors@R: c(
 		       comment = c(ORCID = "0000-0002-4791-442X")),
 	  person(given = "S.", family = "Mukesh Sankar", 
            email = "mukeshsankar@gmail.com",
-		       role = "aut"),
+		       role = "aut",
+		       comment = c(ORCID = "0000-0001-5459-392X")),
     person(given = c("Dhammaprakash", "Pandhari"), family = "Wankhede", 
            email = "d.wankhede@icar.gov.in",
 		       role = "aut",
 		       comment = c(ORCID = "0000-0001-6384-8664")),
     person(given = "Vikender", family = "Kaur",
            email = "vikender.kaur@icar.gov.in",
-		       role = "aut"),
+		       role = "aut",
+		       comment = c(ORCID = "0000-0001-9698-7329")),
     person("ICAR-NBGPR",
            role = c("cph"),
 		       comment = c(url = "www.nbpgr.ernet.in")))
@@ -42,13 +44,13 @@ Copyright: 2015-2023, ICAR-NBPGR
 Encoding: UTF-8
 RoxygenNote: 7.2.3
 NeedsCompilation: no
-Packaged: 2023-05-27 18:17:35 UTC; J. Aravind
+Packaged: 2023-08-18 12:04:49 UTC; J. Aravind
 Author: J. Aravind [aut, cre] (<https://orcid.org/0000-0002-4791-442X>),
-  S. Mukesh Sankar [aut],
+  S. Mukesh Sankar [aut] (<https://orcid.org/0000-0001-5459-392X>),
   Dhammaprakash Pandhari Wankhede [aut]
     (<https://orcid.org/0000-0001-6384-8664>),
-  Vikender Kaur [aut],
+  Vikender Kaur [aut] (<https://orcid.org/0000-0001-9698-7329>),
   ICAR-NBGPR [cph] (www.nbpgr.ernet.in)
 Maintainer: J. Aravind <j.aravind@icar.gov.in>
 Repository: CRAN
-Date/Publication: 2023-05-28 06:30:02 UTC
+Date/Publication: 2023-08-19 00:12:38 UTC
